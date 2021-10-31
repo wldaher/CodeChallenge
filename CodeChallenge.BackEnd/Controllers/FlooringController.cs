@@ -19,10 +19,17 @@ namespace CodeChallenge.BackEnd.Controllers
         }
 
         [HttpGet(Name = "GetFlooring")]
-        public IEnumerable<FlooringDTO> Get(string? manufacturer, string? type, string? color, string? style)
+        public IEnumerable<FlooringDTO> Get(string? manufacturer, int? type, string? color, string? style, int? size)
         {
-            _logger.LogInformation("GetFlooring called with params manufacturer:{manufacturer}, type: {type}, color: {color}, style: {style}", manufacturer, type, color, style); 
-            return this._dbContext.SearchFlooring(manufacturer, type, color, style);
+            _logger.LogInformation("GetFlooring called with params manufacturer:{manufacturer}, type: {type}, color: {color}, style: {style}, size {size}", manufacturer, type, color, style, size); 
+            return this._dbContext.SearchFlooring(manufacturer, type, color, style, size);
+        }
+
+        [HttpPost(Name = "PostFlooring")]
+        public FlooringDTO Post(EditableFlooringDTO flooringDTO)
+        {
+            _logger.LogInformation("PostFlooring called with params {flooringDTO}", flooringDTO.ToString());
+            return this._dbContext.SaveFlooring(flooringDTO);
         }
     }
 }

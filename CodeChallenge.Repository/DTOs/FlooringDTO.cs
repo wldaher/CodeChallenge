@@ -8,6 +8,7 @@ namespace CodeChallenge.Repository.DTOs
 {
     public class FlooringDTO
     {
+        public int Id { get; set; }
         public string Manufacturer { get; set; }
         public string Type { get; set; }
         public string Style { get; set; }

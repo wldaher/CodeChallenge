@@ -5,8 +5,8 @@ namespace CodeChallenge.Repository
 {
     public interface ICodeChallengeDbContext
     {
-        public IEnumerable<FlooringDTO> SearchFlooring(string? manufacturer, string? type, string? color, string? style);
-
+        public IEnumerable<FlooringDTO> SearchFlooring(string? manufacturer, int? type, string? color, string? style, int? size);
+        public FlooringDTO SaveFlooring(EditableFlooringDTO editableFlooringDTO);
         public IEnumerable<TypeEntity> GetTypes();
         public IEnumerable<ColorEntity> GetColors();
         public IEnumerable<StyleEntity> GetStyles();
