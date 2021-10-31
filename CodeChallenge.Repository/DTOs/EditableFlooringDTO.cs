@@ -16,9 +16,9 @@ namespace CodeChallenge.Repository.DTOs
         public int? TypeId { get; set; }
         public int? ColorId { get; set; }
         public int? StyleId { get; set; }
-        public ManufacturerEntity Manufacturer { get; set; }
-        public TypeEntity Type { get; set; }
-        public StyleEntity Style { get; set; }
-        public ColorEntity Color { get; set; }
+        public ManufacturerEntity? Manufacturer { get; set; }
+        public TypeEntity? Type { get; set; }
+        public StyleEntity? Style { get; set; }
+        public ColorEntity? Color { get; set; }
     }
 }

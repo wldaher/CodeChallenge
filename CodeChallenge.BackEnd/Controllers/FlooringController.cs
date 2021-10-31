@@ -25,11 +25,25 @@ namespace CodeChallenge.BackEnd.Controllers
             return this._dbContext.SearchFlooring(manufacturer, type, color, style, size);
         }
 
+        [HttpPut(Name = "PutFlooring")]
+        public FlooringDTO Put(EditableFlooringDTO flooringDTO)
+        {
+            _logger.LogInformation("PutFlooring called with params {flooringDTO}", flooringDTO.ToString());
+            return this._dbContext.SaveFlooring(flooringDTO);
+        }
+
         [HttpPost(Name = "PostFlooring")]
         public FlooringDTO Post(EditableFlooringDTO flooringDTO)
         {
             _logger.LogInformation("PostFlooring called with params {flooringDTO}", flooringDTO.ToString());
             return this._dbContext.SaveFlooring(flooringDTO);
+        }
+
+        [HttpDelete(Name = "DeleteFlooring")]
+        public int Delete(int flooringId)
+        {
+            _logger.LogInformation("DeleteFlooring called with params {flooringId}", flooringId);
+            return this._dbContext.DeleteFlooring(flooringId);
         }
     }
 }

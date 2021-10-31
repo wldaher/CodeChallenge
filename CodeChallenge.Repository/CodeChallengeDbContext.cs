@@ -75,6 +75,28 @@ namespace CodeChallenge.Repository
             }
         }
 
+        public int DeleteFlooring(int flooringId)
+        {
+            using (var connection = new SqlConnection(this._connString))
+            {
+                connection.Open();
+                var dictionary = new Dictionary<string, object>
+                {
+                    { "@FlooringId", flooringId }
+                };
+                var parameters = new DynamicParameters(dictionary);
+                var sql = @"DELETE FROM flooring WHERE id = @FlooringId";
+                var result = connection.Execute(sql, parameters);
+
+                if (result == 0)
+                {
+                    throw new Exception($"No flooring record found with id: {flooringId}");
+                }
+
+                return flooringId;
+            }
+        }
+
         private FlooringDTO InsertFlooring(EditableFlooringDTO editableFlooringDTO)
         {
             using (var connection = new SqlConnection(this._connString))
@@ -147,7 +169,7 @@ namespace CodeChallenge.Repository
                                 AND t.id = @TypeId
                                 AND s.id = @StyleId
                                 AND c.id = @ColorId
-                                AND f.size = @Size";
+                                AND f.size = @Size;";
                 var parameters = new DynamicParameters(dictionary);
                 var result = connection.QueryFirst<FlooringDTO>(sql, parameters, transaction);
 
@@ -159,55 +181,143 @@ namespace CodeChallenge.Repository
 
         private FlooringDTO UpdateFlooring(EditableFlooringDTO editableFlooringDTO)
         {
-            throw new NotImplementedException();
+            using (var connection = new SqlConnection(this._connString))
+            {
+                connection.Open();
+
+                var transaction = connection.BeginTransaction();
+                if (!editableFlooringDTO.ManufacturerId.HasValue)
+                {
+                    editableFlooringDTO.ManufacturerId = this.InsertManufacturer(editableFlooringDTO.Manufacturer, connection, transaction);
+                }
+                if (!editableFlooringDTO.TypeId.HasValue)
+                {
+                    editableFlooringDTO.TypeId = this.InsertType(editableFlooringDTO.Type, connection, transaction);
+                }
+                if (!editableFlooringDTO.StyleId.HasValue)
+                {
+                    editableFlooringDTO.StyleId = this.InsertStyle(editableFlooringDTO.Style, connection, transaction);
+                }
+                if (!editableFlooringDTO.ColorId.HasValue)
+                {
+                    editableFlooringDTO.ColorId = this.InsertColor(editableFlooringDTO.Color, connection, transaction);
+                }
+
+                var sql = @"UPDATE flooring 
+                            SET manufacturer_id = @ManufacturerId, style_id = @StyleId, color_id = @ColorId, type_id = @TypeId, size = @Size
+                            WHERE id = @FlooringId;
+                            SELECT 
+                                f.id,
+                                m.name AS manufacturer, 
+                                t.name AS type, 
+                                s.name AS style, 
+                                s.style_key AS styleKey, 
+                                c.name AS color, 
+                                c.color_number AS colorNumber, 
+                                f.size
+                            FROM flooring f
+                            INNER JOIN manufacturers m ON f.manufacturer_id = m.id
+                            INNER JOIN styles s ON f.style_id = s.id
+                            INNER JOIN types t ON f.type_id = t.id
+                            INNER JOIN colors c ON f.color_id = c.id
+                            WHERE m.id = @ManufacturerId 
+                                AND t.id = @TypeId
+                                AND s.id = @StyleId
+                                AND c.id = @ColorId
+                                AND f.size = @Size;";
+                var dictionary = new Dictionary<string, object?>
+                {
+                    { "@FlooringId", editableFlooringDTO?.Id },
+                    { "@ManufacturerId", editableFlooringDTO?.ManufacturerId },
+                    { "@TypeId", editableFlooringDTO?.TypeId },
+                    { "@StyleId", editableFlooringDTO?.StyleId },
+                    { "@ColorId", editableFlooringDTO?.ColorId },
+                    { "@Size", editableFlooringDTO?.Size }
+                };
+                var parameters = new DynamicParameters(dictionary);
+                var result = connection.QueryFirst<FlooringDTO>(sql, parameters, transaction);
+
+                transaction.Commit();
+
+                return result;
+            }
         }
 
         private int InsertManufacturer(ManufacturerEntity manufacturer, SqlConnection connection, SqlTransaction transaction)
         {
-            var sql = @"INSERT INTO manufacturers(name) VALUES (@ManufacturerName); SELECT id from manufacturers WHERE name = @ManufacturerName";
+            var existingRecordSql = @"SELECT id from manufacturers WHERE name LIKE @ManufacturerName";
             var dictionary = new Dictionary<string, object>
             {
                 { "@ManufacturerName", manufacturer.Name.Trim() }
             };
             var parameters = new DynamicParameters(dictionary);
+            var originalRecordId = connection.ExecuteScalar<int?>(existingRecordSql, parameters, transaction);
+            if (originalRecordId.HasValue)
+            {
+                return originalRecordId.Value;
+            }
+
+            var sql = @"INSERT INTO manufacturers(name) VALUES (@ManufacturerName); SELECT id from manufacturers WHERE name = @ManufacturerName";
             var result = connection.ExecuteScalar<int>(sql, parameters, transaction);
+            
             return result;
         }
 
         private int InsertType(TypeEntity typeEntity, SqlConnection connection, SqlTransaction transaction)
         {
-            var sql = @"INSERT INTO types(name) VALUES (@TypeName); SELECT id from types WHERE name = @TypeName";
+            var existingRecordSql = @"SELECT id from types WHERE name LIKE @TypeName";
             var dictionary = new Dictionary<string, object>
             {
                 { "@TypeName", typeEntity.Name.Trim() }
             };
             var parameters = new DynamicParameters(dictionary);
+            var originalRecordId = connection.ExecuteScalar<int?>(existingRecordSql, parameters, transaction);
+            if (originalRecordId.HasValue)
+            {
+                return originalRecordId.Value;
+            }
+
+            var sql = @"INSERT INTO types(name) VALUES (@TypeName); SELECT id from types WHERE name = @TypeName";
             var result = connection.ExecuteScalar<int>(sql, parameters, transaction);
             return result;
         }
 
         private int InsertColor(ColorEntity color, SqlConnection connection, SqlTransaction transaction)
         {
-            var sql = @"INSERT INTO colors(name, color_number) VALUES (@ColorName, @ColorNumber); SELECT id from colors WHERE name = @ColorName AND color_number = @ColorNumber";
-            var dictionary = new Dictionary<string, object>
+            var existingRecordSql = @"SELECT id from colors WHERE name LIKE @ColorName AND color_number LIKE @ColorNumber";
+            var dictionary = new Dictionary<string, object?>
             {
                 { "@ColorName", color.Name.Trim() },
-                { "@ColorNumber", color.ColorNumber.Trim() }
+                { "@ColorNumber", color.ColorNumber?.Trim() }
             };
             var parameters = new DynamicParameters(dictionary);
+            var originalRecordId = connection.ExecuteScalar<int?>(existingRecordSql, parameters, transaction);
+            if (originalRecordId.HasValue)
+            {
+                return originalRecordId.Value;
+            }
+
+            var sql = @"INSERT INTO colors(name, color_number) VALUES (@ColorName, @ColorNumber); SELECT id from colors WHERE name = @ColorName AND color_number = @ColorNumber";
             var result = connection.ExecuteScalar<int>(sql, parameters, transaction);
             return result;
         }
 
         private int InsertStyle(StyleEntity style, SqlConnection connection, SqlTransaction transaction)
         {
-            var sql = @"INSERT INTO styles(name, style_key) VALUES (@StyleName, @StyleKey); SELECT id from styles WHERE name = @StyleName AND style_key = @StyleKey";
-            var dictionary = new Dictionary<string, object>
+            var existingRecordSql = @"SELECT id from styles WHERE name LIKE @StyleName AND style_key LIKE @StyleKey";
+            var dictionary = new Dictionary<string, object?>
             {
                 { "@StyleName", style.Name.Trim() },
-                { "@StyleKey", style.StyleKey.Trim() }
+                { "@StyleKey", style.StyleKey?.Trim() }
             };
             var parameters = new DynamicParameters(dictionary);
+            var originalRecordId = connection.ExecuteScalar<int?>(existingRecordSql, parameters, transaction);
+            if (originalRecordId.HasValue)
+            {
+                return originalRecordId.Value;
+            }
+
+            var sql = @"INSERT INTO styles(name, style_key) VALUES (@StyleName, @StyleKey); SELECT id from styles WHERE name = @StyleName AND style_key = @StyleKey";
             var result = connection.ExecuteScalar<int>(sql, parameters, transaction);
             return result;
         }

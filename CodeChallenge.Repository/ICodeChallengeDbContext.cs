@@ -7,6 +7,7 @@ namespace CodeChallenge.Repository
     {
         public IEnumerable<FlooringDTO> SearchFlooring(string? manufacturer, int? type, string? color, string? style, int? size);
         public FlooringDTO SaveFlooring(EditableFlooringDTO editableFlooringDTO);
+        public int DeleteFlooring(int flooringId);
         public IEnumerable<TypeEntity> GetTypes();
         public IEnumerable<ColorEntity> GetColors();
         public IEnumerable<StyleEntity> GetStyles();
