@@ -29,10 +29,12 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
+    app.UseSwagger();
+    app.UseSwaggerUI();
     app.UseCors(builder =>
     {
         builder
-        .WithOrigins("wdaher.somethingsomethingsomething")
+        .WithOrigins("https://wdaher-frontend-demo.azurewebsites.net")
         .AllowAnyMethod()
         .AllowAnyHeader();
     });
